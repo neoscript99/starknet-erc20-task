@@ -1,34 +1,46 @@
+# SPDX-License-Identifier: MIT
+# OpenZeppelin Cairo Contracts v0.1.0 (token/erc20/ERC20_Mintable.cairo)
+
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.uint256 import Uint256
 from starkware.starknet.common.syscalls import get_caller_address
+from starkware.cairo.common.uint256 import Uint256
 
-from contracts.token.ERC20.ERC20_base import (
+from openzeppelin.token.erc20.library import (
     ERC20_name,
     ERC20_symbol,
     ERC20_totalSupply,
     ERC20_decimals,
     ERC20_balanceOf,
     ERC20_allowance,
-    ERC20_mint,
     ERC20_initializer,
     ERC20_approve,
     ERC20_increaseAllowance,
     ERC20_decreaseAllowance,
     ERC20_transfer,
     ERC20_transferFrom,
+    ERC20_mint,
+    ERC20_burn,
 )
-from contracts.task.ERC20Solution import get_tokens, request_allowlist
-from contracts.task.ExerciseSolution import deposit_tokens
+
+from openzeppelin.access.ownable import (
+    Ownable_initializer,
+    Ownable_only_owner,
+    Ownable_transfer_ownership,
+)
+
+from openzeppelin.utils.constants import TRUE
 
 @constructor
 func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     let name = 'NKTE'
     let symbol = name
     let initial_supply = Uint256(2900000000000000000000, 0)
-    let recipient = 0x67f63af0ccd588cb3b858e1cac746544420af97e15da4711c6547173625018a
-    ERC20_initializer(name, symbol, initial_supply, recipient)
+    let (owner) = get_caller_address()
+    ERC20_initializer(name, symbol, 18)
+    ERC20_mint(owner, initial_supply)
+    Ownable_initializer(owner)
     return ()
 end
 
@@ -85,23 +97,11 @@ end
 #
 
 @external
-func faucet{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
-    success : felt
-):
-    let amount : Uint256 = Uint256(100 * 1000000000000000000, 0)
-    let (caller) = get_caller_address()
-    ERC20_mint(caller, amount)
-    # Cairo equivalent to 'return (true)'
-    return (1)
-end
-
-@external
 func transfer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     recipient : felt, amount : Uint256
 ) -> (success : felt):
     ERC20_transfer(recipient, amount)
-    # Cairo equivalent to 'return (true)'
-    return (1)
+    return (TRUE)
 end
 
 @external
@@ -109,8 +109,7 @@ func transferFrom{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_
     sender : felt, recipient : felt, amount : Uint256
 ) -> (success : felt):
     ERC20_transferFrom(sender, recipient, amount)
-    # Cairo equivalent to 'return (true)'
-    return (1)
+    return (TRUE)
 end
 
 @external
@@ -118,8 +117,7 @@ func approve{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     spender : felt, amount : Uint256
 ) -> (success : felt):
     ERC20_approve(spender, amount)
-    # Cairo equivalent to 'return (true)'
-    return (1)
+    return (TRUE)
 end
 
 @external
@@ -127,8 +125,7 @@ func increaseAllowance{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
     spender : felt, added_value : Uint256
 ) -> (success : felt):
     ERC20_increaseAllowance(spender, added_value)
-    # Cairo equivalent to 'return (true)'
-    return (1)
+    return (TRUE)
 end
 
 @external
@@ -136,6 +133,36 @@ func decreaseAllowance{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
     spender : felt, subtracted_value : Uint256
 ) -> (success : felt):
     ERC20_decreaseAllowance(spender, subtracted_value)
-    # Cairo equivalent to 'return (true)'
-    return (1)
+    return (TRUE)
+end
+
+@external
+func mint{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    to : felt, amount : Uint256
+):
+    Ownable_only_owner()
+    ERC20_mint(to, amount)
+    return ()
+end
+
+@external
+func transferOwnership{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    new_owner : felt
+):
+    Ownable_transfer_ownership(new_owner)
+    return ()
+end
+
+@external
+func burn{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    account : felt, amount : Uint256
+):
+    Ownable_only_owner()
+    ERC20_burn(account, amount)
+    return ()
+end
+
+@view
+func test() -> (res:felt):
+    return (100)
 end
